@@ -1,0 +1,11 @@
+services:
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.tests
+    environment:
+      TestPostgres: Host=postgres;Database=postgres;Username=postgres;Password=postgres_local_only
+    depends_on:
+      postgres:
+        condition: service_healthy
+

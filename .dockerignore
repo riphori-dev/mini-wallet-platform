@@ -1,0 +1,16 @@
+.git/
+.vs/
+.vscode/
+.review/
+tmp/
+**/bin/
+**/obj/
+**/*.user
+**/.env
+**/.env.*
+**/appsettings.*.local.json
+**/*.pfx
+**/*.p12
+**/*.pem
+**/*.key
+TestResults/

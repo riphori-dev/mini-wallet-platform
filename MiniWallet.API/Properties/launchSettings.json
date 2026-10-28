@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "Wallet": {
+      "commandName": "Project",
+      "launchUrl": "swagger",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "launchBrowser": true,
+      "applicationUrl": "http://localhost:5080"
+    }
+  }
+}

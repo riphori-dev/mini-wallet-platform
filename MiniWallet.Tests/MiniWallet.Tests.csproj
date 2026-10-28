@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.33" />
+    <ProjectReference Include="../MiniWallet.Users.Application/MiniWallet.Users.Application.csproj" />
+    <ProjectReference Include="../MiniWallet.Users.Infrastructure/MiniWallet.Users.Infrastructure.csproj" />
+    <ProjectReference Include="../MiniWallet.Infrastructure/MiniWallet.Infrastructure.csproj" />
+    <ProjectReference Include="../MiniWallet.Application/MiniWallet.Application.csproj" />
+    <ProjectReference Include="../MiniWallet.API/MiniWallet.API.csproj" Aliases="wallet" />
+    <ProjectReference Include="../MiniWallet.Users.API/MiniWallet.Users.API.csproj" Aliases="users" />
+  </ItemGroup>
+</Project>

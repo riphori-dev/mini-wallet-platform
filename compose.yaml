@@ -1,0 +1,70 @@
+name: miniwallet
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_local_only
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-databases.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  wallet-migrate:
+    build:
+      context: .
+      dockerfile: MiniWallet.API/Dockerfile
+    image: miniwallet-wallet:local
+    command: ["--migrate"]
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Database: Host=postgres;Database=wallet;Username=wallet_app;Password=wallet_local_only
+    depends_on:
+      postgres:
+        condition: service_healthy
+  users-migrate:
+    build:
+      context: .
+      dockerfile: MiniWallet.Users.API/Dockerfile
+    image: miniwallet-users:local
+    command: ["--migrate"]
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Database: Host=postgres;Database=users;Username=users_app;Password=users_local_only
+    depends_on:
+      postgres:
+        condition: service_healthy
+  wallet:
+    image: miniwallet-wallet:local
+    build:
+      context: .
+      dockerfile: MiniWallet.API/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Database: Host=postgres;Database=wallet;Username=wallet_app;Password=wallet_local_only
+    ports:
+      - "127.0.0.1:${WALLET_PORT:-5080}:8080"
+    depends_on:
+      wallet-migrate:
+        condition: service_completed_successfully
+  users:
+    image: miniwallet-users:local
+    build:
+      context: .
+      dockerfile: MiniWallet.Users.API/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      Delivery__UsersBaseUrl: http://users:8080
+      Delivery__WalletBaseUrl: http://wallet:8080
+      ConnectionStrings__Database: Host=postgres;Database=users;Username=users_app;Password=users_local_only
+    ports:
+      - "127.0.0.1:${USERS_PORT:-5081}:8080"
+    depends_on:
+      users-migrate:
+        condition: service_completed_successfully
+volumes:
+  postgres-data:
+

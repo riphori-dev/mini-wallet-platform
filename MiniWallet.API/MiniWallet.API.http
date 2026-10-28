@@ -1,0 +1,15 @@
+@Wallet = http://localhost:5080
+@Users = http://localhost:5081
+
+GET {{Wallet}}/health/ready
+Accept: application/json
+
+###
+GET {{Users}}/health/ready
+Accept: application/json
+
+### Register; obtain the verification token via the Development mailbox documented in README.
+POST {{Users}}/api/v1/players
+Content-Type: application/json
+
+{"email":"http-reviewer@example.test","password":"Local-review-password-123!"}
