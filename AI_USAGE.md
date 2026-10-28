@@ -57,3 +57,8 @@ Codex assisted with running builds, tests, and local integration checks. The fin
 The final isolated Docker Compose startup and reviewer walkthrough also passed. Ordinary service restart preserved account, wallet, and transaction data. `DESIGN.md` was rendered and checked against the two-page limit.
 
 These checks provide evidence for the implemented scenarios; they do not represent exhaustive production testing. Detailed commands, results, and limitations are recorded in `docs/PROGRESS.md`.
+
+
+## XML documentation follow-up
+
+The user asked Codex to document the existing domain and API contracts accurately and connect XML comments to Swagger without changing behavior. Codex inspected domain rules, validators, persistence, authorization and installed Swashbuckle 10.3.1, then added comments and documentation metadata. Initial comments below method attributes caused CS1587 warnings; moving them above attributes fixed this. A new OpenAPI assertion caught a missing inferred history schema, fixed with explicit response metadata. Final verification built all projects/the solution, published both APIs with their XML files, passed 35 focused tests and inspected both Swagger UIs in a browser. This follow-up did not rerun the previously recorded full PostgreSQL suite; detailed commands and limitations are in docs/PROGRESS.md.

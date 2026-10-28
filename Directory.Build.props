@@ -1,6 +1,9 @@
 <Project>
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
+    <GenerateDocumentationFile Condition="'$(MSBuildProjectName)' != 'MiniWallet.Tests'">true</GenerateDocumentationFile>
+    <!-- Public infrastructure and composition types are outside the documented domain/API surface. -->
+    <NoWarn Condition="'$(MSBuildProjectName)' != 'MiniWallet.Domain' and '$(MSBuildProjectName)' != 'MiniWallet.Users.Domain'">$(NoWarn);1591</NoWarn>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>

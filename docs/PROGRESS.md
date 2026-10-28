@@ -26,7 +26,7 @@ The assessment core is complete. Users and Wallet run independently from one Doc
 | Balances/history and documented API | Scoped routes, fixed-scale strings, bounded page/pageSize and Problem Details | HTTP contract/pagination/error assertions; both Swagger UIs and reviewer script |
 | One-command startup and persistence | Separate service-owned databases; TCP readiness; locked migration jobs; persistent volume | Fresh source-only isolated Compose startup and ordinary restart |
 | Required documentation/AI disclosure | README.md, DESIGN.md, AI_USAGE.md | Walkthrough executed; design print proof is two pages; actual interactions recorded |
-| Git | Repository initialized; source/status reviewed | No commits or push performed; initial commit remains a review/submission step |
+| Git | Repository initialized; source/status reviewed | HEAD is now 20ea7b0; no commit or push performed during the README edit |
 
 ## Current verification
 
@@ -81,4 +81,27 @@ Suggested commit: `chore: tidy formatting and submission documentation`.
 - Offset pages may shift under concurrent writes. Outcomes are retained for the assessment lifetime.
 - No optional SignalR, broker, Redis, gateway, Kubernetes or production identity/email system.
 
-No known runtime blocker remains. Git has no HEAD; all source remains uncommitted. Review and create a truthful initial commit before submitting a repository link, or use the brief's zip option. Historical stage commits were not fabricated. No optional implementation stage remains.
+No known runtime blocker remains. A Git commit now exists (20ea7b0); earlier empty-history notes describe the pre-commit cleanup snapshot. No history was rewritten. No optional implementation stage remains.
+## README simplification
+
+Shortened README.md to 511 words around startup, Swagger URLs, local credentials, verification, demo BET/WIN, tests and troubleshooting. Detailed implementation and retry rules stay in the linked design/API contract. Existing changes to DESIGN.md and MiniWallet.slnx were left untouched.
+
+Checks: PASS Markdown code fences and referenced local files. Runtime tests: NOT RUN for this documentation-only change; application code/configuration are unchanged. No commit or push performed. Suggested commit: `docs: simplify reviewer quick start`.
+
+## XML documentation and Swagger review
+
+Documented all public members in both Domain projects and all exposed request/response fields and controller actions. Comments distinguish domain checks from caller/database responsibilities, provider references from internal ledger IDs, and caller-selected player IDs from authenticated identity. No business methods, fields, validation or persistence behavior changed. Added explicit HTTP response metadata where XML descriptions otherwise obscured inferred response schemas. Both existing Swashbuckle 10.3.1 pipelines consume API and referenced-project XML; Users errors now document the actual Problem Details media type. Missing public domain documentation remains a compiler warning; CS1591 is suppressed only outside Domain for unrelated infrastructure/composition surfaces.
+
+Checks and actual commands:
+
+- PASS `dotnet build MiniWallet.Tests/MiniWallet.Tests.csproj --no-restore -v minimal`: all nine projects built, zero warnings/errors.
+- FAIL `dotnet build MiniWallet.slnx --no-restore`: SDK selected by unchanged global.json is 8.0.427 and cannot read .slnx. PASS full solution via installed MSBuild 10: `dotnet "C:/Program Files/dotnet/sdk/10.0.301/MSBuild.dll" MiniWallet.slnx /t:Build /verbosity:minimal /nologo`. Project targets remain net8.0. Existing solution edits preserved.
+- PASS `dotnet test MiniWallet.Tests/MiniWallet.Tests.csproj --no-restore --filter "FullyQualifiedName~FoundationTests|FullyQualifiedName~MoneyTests|FullyQualifiedName~UserDomainTests|FullyQualifiedName~FinancialRulesAndValidationTests" -v minimal`: 35 passed, zero failed/skipped. Includes both generated OpenAPI documents, every exposed DTO property's description, endpoint summaries/remarks, Problem Details media types, Swagger HTML/JavaScript and representative replay/reference descriptions.
+- PASS Release publish for each API: `dotnet publish <API.csproj> --no-restore -c Release -o .review/xml-doc-<wallet|users> /p:UseAppHost=false -v minimal`. All XML files consumed by Swagger are present in each published artifact. Outputs are ignored.
+- PASS browser review of both Swagger UIs on temporary hosts at ports 5180/5181: endpoint summaries, expanded transaction amount precision/bounds and registration acceptance/recovery text rendered. Temporary hosts stopped after inspection; no database was used or migrated.
+- PASS source audit: removing XML comments and response-type attributes leaves the same C# content in 28 reviewed domain/application/infrastructure/controller files. Swagger/configuration/test changes are documentation plumbing only.
+- NOT RUN Docker rebuild and full PostgreSQL regression suite for this documentation change. Initial `docker compose ps` could not access the Docker Desktop pipe in the sandbox. Previously recorded full-suite results are historical, not a rerun. To rerun: `docker compose up --build` and the documented Docker test command in README.
+
+Corrections during verification: initial endpoint comments were placed below attributes (CS1587), then moved above them. The first new OpenAPI assertion caught an absent inferred history schema after XML response comments; explicit success response metadata fixed it. Final focused checks pass without weakening those assertions.
+
+Remaining limitation: the default SDK-8 solution command still cannot read the existing .slnx; direct project build or the installed MSBuild-10 command above works. No product features or optional infrastructure added. Existing DESIGN.md, MiniWallet.slnx and README.md edits were preserved. Estimated effort: about 30 minutes. No commit or push performed. Suggested commit: `docs: document domain rules and API contracts in Swagger`.

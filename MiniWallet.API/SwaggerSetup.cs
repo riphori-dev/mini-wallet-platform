@@ -8,6 +8,10 @@ internal static class SwaggerSetup
 {
     public static void Configure(SwaggerGenOptions options)
     {
+        foreach (var assembly in new[] { "MiniWallet.API", "MiniWallet.Application", "MiniWallet.Domain" })
+            options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, assembly + ".xml"), includeControllerXmlComments: true);
+
+        options.SupportNonNullableReferenceTypes();
         options.SwaggerDoc("v1", new OpenApiInfo
         {
             Title = "MiniWallet Wallet",

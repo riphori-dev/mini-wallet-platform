@@ -8,10 +8,21 @@ namespace MiniWallet.Users.API.Controllers;
 [Route("health")]
 public sealed class HealthController(UsersDbContext db, ILogger<HealthController> logger) : ControllerBase
 {
+    /// <summary>Reports that the HTTP host is running.</summary>
+    /// <returns>The HTTP result described by the response codes.</returns>
+    /// <response code="200">Host is alive; database state is not checked.</response>
+    /// <remarks>Anonymous probe; no authentication required.</remarks>
     [HttpGet("live")]
     public IActionResult Live() => Ok(new { status = "healthy" });
 
+    /// <summary>Checks database connectivity and whether all migrations are applied.</summary>
+    /// <param name="cancellationToken">Probe cancellation token.</param>
+    /// <returns>The HTTP result described by the response codes.</returns>
+    /// <response code="200">Database connects and has no pending migrations.</response>
+    /// <response code="503">Database unavailable or migrations pending; retry the probe.</response>
+    /// <remarks>Anonymous probe; does not run migrations or guarantee future request success.</remarks>
     [HttpGet("ready")]
+    [ProducesResponseType<ProblemDetails>(503)]
     public async Task<IActionResult> Ready(CancellationToken cancellationToken)
     {
         try

@@ -2,6 +2,11 @@ using FluentValidation;
 
 namespace MiniWallet.Application;
 
+/// <summary>An internal registration event delivered at least once by Users.</summary>
+/// <param name="EventId">Stable, nonempty delivery event GUID used for inbox deduplication.</param>
+/// <param name="PlayerId">Nonempty registered player GUID supplied by the authenticated internal sender.</param>
+/// <param name="OccurredAt">Registration timestamp later than DateTimeOffset.MinValue.</param>
+/// <param name="Version">Event schema version; only 1 is accepted.</param>
 public sealed record PlayerRegistered(Guid EventId, Guid PlayerId, DateTimeOffset OccurredAt, int Version = 1);
 public enum ProvisioningOutcome { Accepted, EventConflict }
 public interface IPlayerProvisioner
