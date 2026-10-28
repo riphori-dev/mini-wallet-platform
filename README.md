@@ -1,115 +1,108 @@
 # MiniWallet
 
-Two independent .NET 8 controller APIs: Users registers/verifies players and Wallet provisions balances, accepts provider BET/WIN and serves protected balances/history. PostgreSQL, EF Core, FluentValidation and xUnit; inward Domain/Application/Infrastructure/API projects per service. No broker, Redis, gateway or optional real-time features.
+A .NET 8 wallet platform with two independent APIs: **Users** handles registration and email verification; **Wallet** manages USD, EUR and BTC balances and provider BET/WIN transactions. Built with ASP.NET Core, EF Core, PostgreSQL, FluentValidation and xUnit.
 
-## Prerequisites and one-command startup
+## Run
 
-Docker Engine/Desktop with **Linux containers**, Docker Compose v2+, internet access for the first image/package restore, and free localhost ports 5080/5081. A host .NET SDK, manual SQL, external account or untracked configuration is **not required**.
+Requires Docker with Linux containers and Docker Compose. Keep ports **5080** and **5081** free; the first build needs internet access.
 
 ```sh
 docker compose up --build
 ```
 
-- Wallet Swagger UI: http://127.0.0.1:5080/swagger
-- Users Swagger UI: http://127.0.0.1:5081/swagger
-- Both expose `/health/live` and `/health/ready`.
+Databases, migrations and demo accounts are created automatically. No host .NET SDK, manual SQL or external account is needed.
 
-PostgreSQL 16 has one persistent named volume and separate `wallet`/`users` databases and non-superuser owners. Initialization SQL creates both automatically on a new volume. A TCP health check waits until initialization finishes, then per-service migration jobs complete before API startup. Normal hosts never migrate; PostgreSQL advisory locks serialize competing migrators. `docker compose restart postgres users wallet` preserves data; `docker compose down` also preserves the volume. Do not use `down -v` on data you want to keep.
+- [Users Swagger](http://127.0.0.1:5081/swagger)
+- [Wallet Swagger](http://127.0.0.1:5080/swagger)
 
-All checked-in passwords/signing material are **local Development defaults only**. Compose binds APIs to loopback and does not publish PostgreSQL. Database credentials are in compose.yaml; token/mailbox defaults are in appsettings.Development.json. No real secrets are required. Optional `WALLET_PORT`/`USERS_PORT` environment variables change published ports for an isolated review.
+Data survives restart and `docker compose down`. Adding `-v` deletes the database volume.
 
-## Local credentials and JWTs
+## Try it
 
-| Identity | Credentials | Use |
-| --- | --- | --- |
-| Registered player | Own email/password after verification | `/dev/token`, role=player; own reads |
-| Funded demo | `demo@miniwallet.test` / `Local-demo-password-123!` | `/dev/token`; separate fixture UUID below |
-| Admin | `admin@miniwallet.test` / `Local-admin-password-123!` | `/dev/token`, role=admin; any-player reads |
-| Provider client | `local-provider` / `local-provider-secret-123!` | `/dev/connect/token`, scope `transactions:write` |
-| Internal client | `users-delivery` / `local-internal-secret-123!` | `/dev/connect/token`, scope `players:provision` |
-| Reviewer mailbox | Header `X-Dev-Mailbox-Key: local-mailbox-key` | `GET /dev/mailbox` |
+### React betting demo
 
-The Users-hosted JSON issuer is a documented **Development issuer, not production OAuth/OIDC**. Token/mailbox actions return 404 outside Development; admin/demo seeding only runs in Development migration jobs. Neither registration nor login accepts requested roles/subjects. Tokens expire in 10 minutes, with no refresh flow. Wallet checks HS256 signature, issuer, audience, lifetime and principal kind/role/scope. Player sub is the persisted verified Users UUID. Provider identities are machines; internal delivery has a separate audience, so ordinary provider/player/admin tokens cannot provision wallets.
+A basic React sports betting page in `MiniWallet.UI` shows a fictional Premier League fixture, Arsenal vs Chelsea. Pick Arsenal (2.10), draw (3.40) or Chelsea (3.60), choose USD, EUR or BTC and enter a stake. Placing the bet submits a BET debit. A separate **Simulate full-time** control finishes the match; a winning selection submits a matching WIN for stake × decimal odds, including the stake and rounded down to the currency's smallest unit. All odds and results are sample data; no real money is involved.
 
-## Reviewer walkthrough
+Start the APIs with `docker compose up --build`, then in another terminal (Node.js 20.19+ or 22.12+ required):
 
-Use Swagger **Try it out**; bodies below are JSON. Alternatively, Windows PowerShell 5+ or PowerShell 7 can run the complete asserted flow:
+```sh
+cd MiniWallet.UI
+npm install
+npm run dev
+```
+
+Open [the betting demo](http://127.0.0.1:5173), click **Connect demo wallet**, select a full-time result on the match card, choose a stake and **Place bet**. Then select a demo result and click **Simulate full-time**. For example, USD 10 on Arsenal returns USD 21 if Arsenal wins; a draw or Chelsea win has no payout. Random mode gives each result an equal chance, independently of the illustrative odds. Your balance and transaction activity update after placing and settling the bet. Expand **Under the hood** to see the API calls. The page uses the seeded demo account and provider credentials automatically; both APIs must run in Development. Its shared starting funds are USD 100, EUR 100 and BTC 0.01; existing activity changes these balances and there is no top-up endpoint.
+
+An unfinished bet is saved locally with its exact transaction IDs and payload. After simulating full-time, its result is also saved before settlement. **Resume saved bet** retries the same operation after an uncertain response instead of placing another bet or generating a new result. Tokens remain in memory. Do not clear browser storage while a bet is pending. A completed demo can be played again as a fresh simulated fixture.
+
+The **API explorer** link opens the original endpoint playground for registration, verification, player/admin login, wallet reads, manual provider requests and health checks. Credentials and tokens are redacted from its inspector.
+
+For a new account, enter a new email and a password of at least 12 characters under **Player onboarding**, register, read the development mailbox, choose **Use token**, and verify. Then sign in under Wallets. New wallets start at zero and may take a moment to provision.
+
+The Vite server proxies `/users-api` and `/wallet-api` to ports 5081 and 5080, so no backend CORS changes are needed. To use different ports, copy `MiniWallet.UI/.env.example` to `MiniWallet.UI/.env.local`, adjust the targets, and restart Vite. Tokens and credentials stay in browser memory and are cleared by a page refresh. Development issuers and the mailbox require the APIs to run in Development. `npm run build` creates a production bundle; `npm run preview` serves it locally with the same proxy. Deploying the bundle elsewhere requires equivalent reverse proxy routes.
+
+### PowerShell and Swagger
+
+The quickest walkthrough uses PowerShell:
 
 ```powershell
 ./scripts/verify-reviewer.ps1
 ```
 
-1. Users `POST /api/v1/players`:
+It checks registration, verification, zero-balance wallets, demo BET/WIN, replay, history and access rules. To explore manually, use Swagger's **Try it out**:
 
-   ```json
-   {"email":"player@example.test","password":"Player-password-123!"}
-   ```
+1. In Users, register with `POST /api/v1/players`:
+   `{"email":"player@example.test","password":"Player-password-123!"}`.
+2. Open `GET /dev/mailbox` with header `X-Dev-Mailbox-Key: local-mailbox-key`. Copy the verification token and send it to `POST /api/v1/email-verifications` as `{"token":"<token>"}`.
+3. Send the same email/password to `POST /dev/token`. Copy `access_token`, then paste it into Wallet Swagger's **Authorize** dialog.
+4. Read `/api/v1/me/wallets` and `/api/v1/me/wallets/USD/transactions`. New players automatically receive three **zero-balance** wallets; provisioning may take a moment.
 
-   `201` means user + verification hash + pending registration delivery committed. `provisioningStatus=pending` acknowledges acceptance, not synchronous Wallet completion. An outage leaves durable pending work; the worker retries automatically. No player create-wallet call exists.
-2. Users `GET /dev/mailbox` with the reviewer header; copy the latest token for the normalized email. `POST /api/v1/email-verifications` with `{"token":"<copied token>"}` returns 204. Secrets are random, hashed in storage and expire after 24 hours; consumed/expired tokens return 400.
-3. Users `POST /dev/token` with the same email/password. Unverified login returns 403; wrong credentials return 401. Copy access_token. In Wallet Swagger **Authorize**, paste the JWT only.
-4. Wallet `GET /api/v1/me/wallets`: automatically provisioned USD/EUR/BTC all start at zero. If provisioning is still pending, a temporary 404 may be retried. `/api/v1/me/wallets/USD/transactions?page=1&pageSize=20` shows own history.
-5. Obtain a distinct provider token from Users `POST /dev/connect/token`:
+### Local demo credentials
 
-   ```json
-   {"clientId":"local-provider","clientSecret":"local-provider-secret-123!","scope":"transactions:write"}
-   ```
+These credentials and the token issuer are **Development-only**. Tokens expire after 10 minutes.
 
-6. Use the **separate funded demo**, UUID `de000000-0000-4000-8000-000000000001`. Development migration records opening `DEV_FUNDING` entries once: USD=100.00, EUR=100.00, BTC=0.01000000. Restart never replenishes/reset balances. New registrations remain zero; there is no public deposit endpoint.
-7. With the provider JWT, Wallet `POST /api/v1/transactions`:
+| Identity | Credentials | Token endpoint |
+| --- | --- | --- |
+| Funded player | `demo@miniwallet.test` / `Local-demo-password-123!` | `POST /dev/token` |
+| Admin | `admin@miniwallet.test` / `Local-admin-password-123!` | `POST /dev/token` |
+| Provider client | `local-provider` / `local-provider-secret-123!` | `POST /dev/connect/token` |
 
-   ```json
-   {"externalTransactionId":"demo-bet-001","playerId":"de000000-0000-4000-8000-000000000001","currency":"USD","type":"BET","amount":"10.00"}
-   ```
+Providers use a separate machine login:
 
-   After 201, submit:
+```json
+{"clientId":"local-provider","clientSecret":"local-provider-secret-123!","scope":"transactions:write"}
+```
 
-   ```json
-   {"externalTransactionId":"demo-win-001","playerId":"de000000-0000-4000-8000-000000000001","currency":"USD","type":"WIN","amount":"25.00","betExternalTransactionId":"demo-bet-001"}
-   ```
+Use that provider token for `POST /api/v1/transactions`. The funded demo player ID is `de000000-0000-4000-8000-000000000001`:
 
-   On a fresh fixture, balance moves 100 -> 90 -> 115. Repeat the identical BET: its stored 201 body still reports original balanceAfter=90.00. Use fresh IDs for new intended actions. WIN requires an accepted matching provider/player/currency BET; **one successful WIN per BET is an explicit assumption**, not a brief requirement.
-8. Log in as the demo to inspect its balances/history. Log in as admin and use `/api/v1/players/{playerId}/wallets` and `.../wallets/USD/transactions`. The newly registered player receives 403 on those admin routes; a playerId query cannot override `/me`. Providers cannot read player/admin wallets, and players cannot call provider writes.
+```json
+{"externalTransactionId":"demo-bet-001","playerId":"de000000-0000-4000-8000-000000000001","currency":"USD","type":"BET","amount":"10.00"}
+```
 
-A mailbox restart loses messages, not user state. Authenticate and resend via `POST /api/v1/email-verifications/resend` with email/password; old tokens are invalidated. After a lost registration response, retry registration: duplicate normalized email returns 409 with no extra user/event, then use original credentials for login/resend. No general registration replay framework. After a lost verification response, try login to confirm success.
+Then settle the bet:
 
-## Financial and failure contract
+```json
+{"externalTransactionId":"demo-win-001","playerId":"de000000-0000-4000-8000-000000000001","currency":"USD","type":"WIN","amount":"25.00","betExternalTransactionId":"demo-bet-001"}
+```
 
-Amounts are positive invariant **decimal strings**; JSON numbers, exponent, signs, grouping, whitespace and excess precision (including trailing zeros) are rejected. USD/EUR scale 2, BTC 8. Maximum amount/balance is 99999999999999999999.99999999 (USD/EUR effective .99). Exact PostgreSQL numeric plus explicit range/quantization checks avoids typmod rounding. C# decimal and Money enforce matching currencies, nonnegative balance and bounded credits.
+The demo starts with explicit opening credits of **USD 100, EUR 100 and BTC 0.01**; restart does not replenish them. Ordinary registrations stay at zero. One successful WIN per BET is the documented settlement assumption.
 
-One transaction route selects focused BET/WIN handlers. Unique `(providerId,externalTransactionId)` is global to that provider, across wallets/currencies. Reservation, locked wallet checks, balance, immutable ledger and stored response commit together. Exact typed replay returns original status/body; changed payload gives 409 idempotency_conflict. Terminal business 409 outcomes reserve the ID: a rejected BET cannot later succeed silently after funding. New intended attempts require new IDs. Validation/auth failures and missing provisioning do not reserve keys.
+Repeat the same request to replay its original result. Use a new transaction ID for a new action; after a timeout, retry the **same ID and payload**. Amounts are decimal strings: USD/EUR allow 2 fractional digits, BTC 8.
 
-Transient database/3-second lock timeouts return 503 + Retry-After and roll back. Network timeout/unknown commit must be retried with the **same ID/payload** and backoff; never infer success or blindly replace the ID. Delivery is at least once with deduplicated effects, not exactly-once delivery. Worker HTTP requests have 5-second timeouts and persisted retry delays, no fixed discard limit and no database transaction across HTTP.
+Log in as the demo player to inspect its balances/history. Admins can read `/api/v1/players/{playerId}/wallets` and its currency history routes. Players can read only their own wallets; providers cannot use those read routes.
 
-Errors use RFC 9457 application/problem+json with stable code and traceId. Statuses: 400 invalid input, 401 missing/invalid auth, 403 wrong permissions, 404 unavailable wallet, 409 conflict/business rejection, 503 transient failure; unexpected 500 responses are sanitized. History returns `{items,page,pageSize,hasMore}`, ordered createdAt/id descending; page defaults 1 (max 10000), size defaults 20 (max 100). New writes can shift offset pages. Full shapes and semantics: [API contract](docs/API_CONTRACT.md).
-
-## Tests and development
+## Test
 
 ```sh
 docker compose -f compose.yaml -f compose.tests.yaml run --build --rm tests
 ```
 
-This runs xUnit against real, automatically migrated, randomly named PostgreSQL test databases, then removes only those test databases. Domain/application cases test money, matching BET rules and async validation. Integration cases target atomic registration/provisioning/ledger changes, constraints, lock timeouts, 80+80 against 100 across two Wallet hosts, duplicate/replay/response-loss recovery, ownership, JWTs, pagination and error contracts. No EF InMemory/mocks prove database correctness. See [actual results](docs/PROGRESS.md); no coverage percentage is claimed.
+Runs xUnit against real, disposable PostgreSQL test databases. Tests focus on financial rules, concurrent writes, atomicity, replay/recovery and authorization. Application data is preserved. See [verification results](docs/PROGRESS.md).
 
-Optional live recovery/demo checks (they mutate only their own review records):
+## Troubleshooting
 
-```powershell
-./scripts/verify-provisioning.ps1
-./scripts/verify-transactions.ps1
-```
+- **Startup fails:** confirm Docker is running, check port availability, then inspect `docker compose logs postgres wallet-migrate users-migrate`.
+- **Verification message missing:** call `POST /api/v1/email-verifications/resend` with the player's email/password.
+- **401 or 403:** renew the token or use the correct player, admin or provider credentials.
 
-The first temporarily stops Wallet/restarts Users and restores Wallet. The second adds a fresh demo BET/WIN pair (+15 USD). `verify-reviewer.ps1 -StatePath <temporary-file>` records only non-secret IDs/balance; after ordinary restart, run it with the same file and `-CheckPersistence` for read-only persistence assertions. URL parameters support alternative review ports.
-
-Host development requires .NET SDK 8.0.4xx: `dotnet restore MiniWallet.sln`, `dotnet build MiniWallet.sln --no-restore`, `dotnet test MiniWallet.sln --no-build`, `dotnet tool restore`. Host tests skip PostgreSQL cases unless TestPostgres points to an appropriate local test server; use the Docker command for full evidence. Both .sln and the original .slnx list the same projects; SDK 8 uses .sln. Supply service ConnectionStrings__Database when running a host; HTTP launch profiles use 5080/5081. Generate migrations with `dotnet ef migrations add <Name> --project MiniWallet.Infrastructure --startup-project MiniWallet.API` (Users equivalents for Users). No speculative generic repository, mediator or shared entity/DbContext.
-
-## Short troubleshooting
-
-- Docker cannot connect: start the Linux engine; confirm `docker info` and `docker compose version`.
-- Ports occupied: stop the other app or set WALLET_PORT/USERS_PORT; use matching reviewer script URL parameters.
-- Startup fails: inspect `docker compose logs postgres wallet-migrate users-migrate`; failed migrations intentionally block API startup. Do not delete existing data as a generic repair.
-- New player has no wallet yet: inspect Users delivery logs; keep both APIs running and retry the read. Events remain pending across outages/restarts.
-- Verification message gone: authenticate and resend. Tokens cannot be recovered from stored hashes.
-- 401: renew the expired token and use the correct audience. 403: use the intended player/admin/provider/internal credentials; do not request roles in a body.
-- 409 replay conflict: preserve the original typed payload. Terminal business rejection needs a new ID only for a corrected, intentional attempt.
-
-[Design](DESIGN.md) and [AI usage](AI_USAGE.md) explain decisions and actual tool interactions. Local credentials and demo balances are assessment conveniences, not production configuration.
+See the [API contract](docs/API_CONTRACT.md) for precision, pagination, errors and retry rules; [design](DESIGN.md) for architecture and trade-offs; and [AI usage](AI_USAGE.md) for the development record.
