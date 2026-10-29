@@ -2,11 +2,12 @@
   "profiles": {
     "Wallet": {
       "commandName": "Project",
+      "launchBrowser": true,
       "launchUrl": "swagger",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ConnectionStrings__Database": "Host=localhost;Port=55432;Database=wallet;Username=wallet_app;Password=wallet_local_only"
       },
-      "launchBrowser": true,
       "applicationUrl": "http://localhost:5080"
     }
   }

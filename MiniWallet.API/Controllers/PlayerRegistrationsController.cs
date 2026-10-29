@@ -28,6 +28,8 @@ public sealed class PlayerRegistrationsController(ProvisionPlayer provision) : C
     [ProducesResponseType<ProblemDetails>(503)]
     public async Task<IActionResult> Receive(PlayerRegistered registration, CancellationToken ct)
     {
+        MiniWallet.Auditing.AuditDetails.Set(HttpContext, "TargetPlayerId", registration.PlayerId.ToString());
+        MiniWallet.Auditing.AuditDetails.Set(HttpContext, "EventId", registration.EventId.ToString());
         await provision.ExecuteAsync(registration, ct);
         return NoContent();
     }

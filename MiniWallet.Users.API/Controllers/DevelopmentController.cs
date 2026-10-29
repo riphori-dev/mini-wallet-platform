@@ -32,6 +32,8 @@ public sealed class DevelopmentController(IWebHostEnvironment environment, UserU
     {
         if (!environment.IsDevelopment()) return NotFound();
         var identity = await users.LoginAsync(request, ct);
+        MiniWallet.Auditing.AuditDetails.Set(HttpContext, "ActorId", identity.Id.ToString());
+        MiniWallet.Auditing.AuditDetails.Set(HttpContext, "Role", identity.Role);
         Response.Headers.CacheControl = "no-store";
         return Ok(services.GetRequiredService<IAccessTokenIssuer>().ForUser(identity));
     }
@@ -58,7 +60,10 @@ public sealed class DevelopmentController(IWebHostEnvironment environment, UserU
         var result = await services.GetRequiredService<IValidator<MachineTokenRequest>>().ValidateAsync(request, ct);
         if (!result.IsValid) throw new UseCaseFailure(400, "invalid_request", "Invalid machine token request.");
         Response.Headers.CacheControl = "no-store";
-        return Ok(services.GetRequiredService<IAccessTokenIssuer>().ForMachine(request.ClientId, request.ClientSecret, request.Scope));
+        var token = services.GetRequiredService<IAccessTokenIssuer>().ForMachine(request.ClientId, request.ClientSecret, request.Scope);
+        MiniWallet.Auditing.AuditDetails.Set(HttpContext, "ActorId", request.ClientId);
+        MiniWallet.Auditing.AuditDetails.Set(HttpContext, "Role", "machine");
+        return Ok(token);
     }
 
     /// <summary>Reads recent plaintext verification messages from the local Development mailbox.</summary>

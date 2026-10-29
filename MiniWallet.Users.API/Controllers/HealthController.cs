@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MiniWallet.Users.Infrastructure;
+using MiniWallet.Users.Infrastructure.Users;
 
 namespace MiniWallet.Users.API.Controllers;
 

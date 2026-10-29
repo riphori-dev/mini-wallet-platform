@@ -20,8 +20,13 @@ public sealed class PlayersController(UserUseCases users) : ControllerBase
     [ProducesResponseType<ProblemDetails>(400)]
     [ProducesResponseType<ProblemDetails>(409)]
     [ProducesResponseType<ProblemDetails>(503)]
-    public async Task<IActionResult> Register(RegisterRequest request, CancellationToken ct) =>
-        StatusCode(201, await users.RegisterAsync(request, ct));
+    public async Task<IActionResult> Register(RegisterRequest request, CancellationToken ct)
+    {
+        var result = await users.RegisterAsync(request, ct);
+        MiniWallet.Auditing.AuditDetails.Set(HttpContext, "TargetPlayerId", result.PlayerId.ToString());
+        MiniWallet.Auditing.AuditDetails.Set(HttpContext, "VerificationDeliveryStatus", result.VerificationDeliveryStatus);
+        return StatusCode(201, result);
+    }
 
     /// <summary>Consumes an email verification token.</summary>
     /// <param name="request">64-character hexadecimal token from the verification message.</param>

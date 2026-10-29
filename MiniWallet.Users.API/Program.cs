@@ -2,10 +2,14 @@ using Microsoft.EntityFrameworkCore;
 using MiniWallet.Users.Infrastructure;
 using MiniWallet.Users.API;
 using FluentValidation;
-using MiniWallet.Users.Application;
 using System.Text.Json.Serialization;
+using MiniWallet.Users.Application;
+using MiniWallet.Users.Infrastructure.Development;
+using MiniWallet.Users.Infrastructure.Users;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Logging.AddJsonConsole(options => options.IncludeScopes = true);
+builder.Services.AddSingleton<MiniWallet.Auditing.IAuditWriter, MiniWallet.Auditing.PostgresAuditWriter>();
 builder.Services.AddDbContext<UsersDbContext>(options => options.UseNpgsql(
     builder.Configuration.GetConnectionString("Database")
     ?? throw new InvalidOperationException("ConnectionStrings:Database is required.")));
@@ -27,18 +31,16 @@ builder.Services.AddScoped<IValidator<CredentialsRequest>, CredentialsValidator>
 builder.Services.AddScoped<IValidator<VerifyRequest>, VerificationValidator>();
 builder.Services.AddScoped<IValidator<MachineTokenRequest>, MachineTokenValidator>();
 builder.Services.AddRegistrationDelivery(builder.Configuration);
+builder.Services.AddVerificationEmail(builder.Configuration, builder.Environment.IsDevelopment());
 if (builder.Environment.IsDevelopment())
 {
     string Required(string name) => builder.Configuration[name]
         ?? throw new InvalidOperationException($"Missing development configuration: {name}");
-    builder.Services.AddSingleton<DevelopmentMailbox>();
-    builder.Services.AddSingleton<IEmailSender>(sp => sp.GetRequiredService<DevelopmentMailbox>());
     builder.Services.AddSingleton(new DevelopmentIssuerSettings(Required("Jwt:Issuer"), Required("Jwt:SigningKey"),
         Required("Development:ProviderClientId"), Required("Development:ProviderSecret"),
         Required("Development:InternalClientId"), Required("Development:InternalSecret")));
     builder.Services.AddSingleton<IAccessTokenIssuer, DevelopmentTokenIssuer>();
 }
-else builder.Services.AddSingleton<IEmailSender, UnavailableEmailSender>();
 
 var app = builder.Build();
 if (args.Contains("--migrate"))
@@ -57,6 +59,7 @@ if (args.Contains("--migrate"))
 }
 
 // Hosts never migrate. Compose runs the migrator to completion before starting hosts.
+app.UseMiddleware<MiniWallet.Auditing.AuditMiddleware>("Users");
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 if (app.Environment.IsDevelopment())

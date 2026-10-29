@@ -3,6 +3,7 @@
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../Shared/Auditing/AuditTrail.cs" Link="Auditing/AuditTrail.cs" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.33" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.23.0" />
     <ProjectReference Include="../MiniWallet.Application/MiniWallet.Application.csproj" />

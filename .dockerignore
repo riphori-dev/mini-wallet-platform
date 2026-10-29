@@ -5,6 +5,8 @@
 tmp/
 **/bin/
 **/obj/
+**/node_modules/
+**/dist/
 **/*.user
 **/.env
 **/.env.*

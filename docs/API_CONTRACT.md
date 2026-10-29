@@ -19,19 +19,19 @@ Policies check principal kind and scope together. Internal and provider clients 
 
 | Method/path | Input / access | Success | Other outcomes |
 | --- | --- | --- | --- |
-| `POST /api/v1/players` | Anonymous, email/password | `201` durable registration | `400`, `409 email_already_registered`, `503` |
+| `POST /api/v1/register` | Anonymous, email/password | `201` durable registration | `400`, `409 email_already_registered`, `503` |
 | `POST /api/v1/email-verifications/resend` | Email/password credentials; rotates unverified token | `204` (also already verified) | `400`, `401`, `503` |
 | `POST /api/v1/email-verifications` | Anonymous, `{ "token": "opaque-secret" }` | `204` token consumed and account verified | `400 invalid_verification_token` (invalid/expired/consumed), `503` |
 | `POST /dev/token` | Development only; player email/password, or configured admin credentials | `200` bearer token | `400`, `401`, `403 email_not_verified`, `503` |
 | `POST /dev/connect/token` | Development only; JSON `clientId`, `clientSecret`, `scope` (documented dev protocol) | `200` scoped provider/internal token | `400`, `401`, `403` |
-| `GET /dev/mailbox` | Development only; separate reviewer credential | `200` verification messages/links | `401`, `403`, `503` |
+| `GET /dev/mailbox` | Development only; separate reviewer credential | `200` verification-message previews | `401`, `403`, `503` |
 
-Development token/mailbox actions return 404 outside Development and the issuer is not registered there. Tokens use HS256, a checked-in local-only signing secret and 10-minute expiry. Player sub is the verified Users UUID; admin role comes only from the seeded database identity. Verification secrets are 32 random bytes, stored only as SHA-256 hashes with a 24-hour expiry, cleared on atomic consumption. Reuse/expiry returns 400 without undoing verification. Messages live in a bounded (100 messages), key-protected in-memory Development mailbox; restart/eviction loses messages, not user/token state. Authenticate with email/password to resend and invalidate the previous token. Failed email delivery after registration still returns durable 201 with verificationDeliveryStatus=unavailable. Resend delivery failure returns retryable 503. No external provider, durable email intent or encrypted email pipeline is implemented.
+Development token/mailbox actions return 404 outside Development and the issuer is not registered there. Tokens use HS256, a checked-in local-only signing secret and 10-minute expiry. Player sub is the verified Users UUID; admin role comes only from the seeded database identity. Verification secrets are 32 random bytes, stored only as SHA-256 hashes with a 24-hour expiry, cleared on atomic consumption. Reuse/expiry returns 400 without undoing verification. Development sends verification messages over SMTP to local Mailpit (browser inbox at port 8025, persistent volume). A bounded (100 messages), key-protected in-memory Development mailbox also previews SMTP-accepted messages; Users restart/eviction loses that preview, not Mailpit messages or user/token state. SMTP is bounded to five seconds by default; acceptance is not proof of internet delivery. Authenticate with email/password to resend and invalidate the previous token. Failed email delivery after registration still returns durable 201 with verificationDeliveryStatus=unavailable. Resend delivery failure returns retryable 503. No external SMTP account, durable email intent or encrypted email pipeline is required. SMTP delivery failure is recovered through resend, not an automatic email worker. See [SMTP configuration](SMTP.md).
 
 Example registration:
 
 ```http
-POST /api/v1/players
+POST /api/v1/register
 Content-Type: application/json
 
 {"email":"player@example.test","password":"Example-password-123!"}

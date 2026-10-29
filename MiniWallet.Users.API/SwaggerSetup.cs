@@ -16,7 +16,7 @@ internal static class SwaggerSetup
         {
             Title = "MiniWallet Users",
             Version = "v1",
-            Description = "Register, read /dev/mailbox with X-Dev-Mailbox-Key, verify, then POST /dev/token. Development credentials and JSON client flow are in README.md."
+            Description = "Register, open the local Mailpit SMTP inbox at http://localhost:8025 (or /dev/mailbox with X-Dev-Mailbox-Key), verify the emailed token, then POST /dev/token. SMTP acceptance is not proof of internet delivery. Use authenticated resend if delivery is unavailable. Development credentials and JSON client flow are in README.md."
         });
     }
 }
