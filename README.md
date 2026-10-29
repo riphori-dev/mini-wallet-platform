@@ -1,111 +1,69 @@
 # MiniWallet
 
-A .NET 8 wallet platform with two independent APIs: **Users** handles registration and email verification; **Wallet** manages USD, EUR and BTC balances and provider BET/WIN transactions. Built with ASP.NET Core, EF Core, PostgreSQL, FluentValidation and xUnit.
+Two .NET 8 APIs: Users handles registration/email verification; Wallet handles USD/EUR/BTC balances and provider BET/WIN transactions.
 
 ## Run
 
-Requires Docker with Linux containers and Docker Compose. Keep ports **5080** and **5081** free; the first build needs internet access.
+Install Docker with Compose, then from this repository:
 
-```sh
+```powershell
 docker compose up --build
 ```
 
-Databases, migrations and demo accounts are created automatically. No host .NET SDK, manual SQL or external account is needed.
+This starts PostgreSQL, Mailpit, service-owned migration jobs, Users, two Wallet instances and Nginx. Data persists in named volumes.
 
-- [Users Swagger](http://127.0.0.1:5081/swagger)
-- [Wallet Swagger](http://127.0.0.1:5080/swagger)
-- [Verification email inbox (Mailpit)](http://127.0.0.1:8025)
-
-Mailpit captures verification emails locally; no external email account or credentials are needed. For local debugging, run `docker compose up -d mailpit` before starting Users. See [SMTP setup and recovery](docs/SMTP.md).
-
-Data survives restart and `docker compose down`. Adding `-v` deletes the database volume.
+| Endpoint | URL |
+| --- | --- |
+| Load-balanced Wallet Swagger | http://localhost:5080/swagger |
+| Users Swagger | http://localhost:5081/swagger |
+| Single-instance Wallet / SignalR demo | http://localhost:5082/swagger |
+| Captured verification emails | http://localhost:8025 |
 
 ## Try it
 
-### React betting demo
+Use `POST http://localhost:5081/dev/token` with JSON email/password to obtain a player/admin token. Use it as Bearer authorization for wallet reads. The seeded demo player is `demo@miniwallet.test` / `Local-demo-password-123!`, ID `de000000-0000-4000-8000-000000000001`. The admin is `admin@miniwallet.test` / `Local-admin-password-123!`.
 
-A basic React sports betting page in `MiniWallet.UI` shows a fictional Premier League fixture, Arsenal vs Chelsea. Pick Arsenal (2.10), draw (3.40) or Chelsea (3.60), choose USD, EUR or BTC and enter a stake. Placing the bet submits a BET debit. A separate **Simulate full-time** control finishes the match; a winning selection submits a matching WIN for stake × decimal odds, including the stake and rounded down to the currency's smallest unit. All odds and results are sample data; no real money is involved.
+Providers use `POST /dev/connect/token` on Users with JSON `clientId: local-provider`, `clientSecret: local-provider-secret-123!`, `scope: transactions:write`. Use the provider token for `POST http://localhost:5080/api/v1/transactions`. Swagger and [API_CONTRACT.md](docs/API_CONTRACT.md) contain request shapes and examples. These credentials and the token issuer are for local Development only.
 
-Start the APIs with `docker compose up --build`, then in another terminal (Node.js 20.19+ or 22.12+ required):
+New registrations start with zero USD/EUR/BTC wallets automatically. Only the seeded demo account has opening funds (USD/EUR 100, BTC 0.01). Existing activity persists; restart does not replenish funds. Verification messages are captured in Mailpit.
 
-```sh
-cd MiniWallet.UI
-npm install
-npm run dev
-```
+See [LOAD_BALANCER.md](docs/LOAD_BALANCER.md) for routing headers, a concurrent-bet demonstration and separate application updates. See [REALTIME.md](docs/REALTIME.md) for the optional single-instance SignalR feature; use port **5082** for both the socket and transaction requests when testing it.
 
-Open [the betting demo](http://127.0.0.1:5173), click **Connect demo wallet**, select a full-time result on the match card, choose a stake and **Place bet**. Then select a demo result and click **Simulate full-time**. For example, USD 10 on Arsenal returns USD 21 if Arsenal wins; a draw or Chelsea win has no payout. Random mode gives each result an equal chance, independently of the illustrative odds. Your balance and transaction activity update after placing and settling the bet. Expand **Under the hood** to see the API calls. The page uses the seeded demo account and provider credentials automatically; both APIs must run in Development. Its shared starting funds are USD 100, EUR 100 and BTC 0.01; existing activity changes these balances and there is no top-up endpoint.
-
-An unfinished bet is saved locally with its exact transaction IDs and payload. After simulating full-time, its result is also saved before settlement. **Resume saved bet** retries the same operation after an uncertain response instead of placing another bet or generating a new result. Tokens remain in memory. Do not clear browser storage while a bet is pending. A completed demo can be played again as a fresh simulated fixture.
-
-The **API explorer** link opens the original endpoint playground for registration, verification, player/admin login, wallet reads, manual provider requests and health checks. Credentials and tokens are redacted from its inspector.
-
-For a new account, enter a new email and a password of at least 12 characters under **Player onboarding**, register, read the development mailbox preview or open Mailpit, paste the token, and verify. Then sign in under Wallets. New wallets start at zero and may take a moment to provision.
-
-The Vite server proxies `/users-api` and `/wallet-api` to ports 5081 and 5080, so no backend CORS changes are needed. To use different ports, copy `MiniWallet.UI/.env.example` to `MiniWallet.UI/.env.local`, adjust the targets, and restart Vite. Tokens and credentials stay in browser memory and are cleared by a page refresh. Development issuers and the mailbox require the APIs to run in Development. `npm run build` creates a production bundle; `npm run preview` serves it locally with the same proxy. Deploying the bundle elsewhere requires equivalent reverse proxy routes.
-
-### PowerShell and Swagger
-
-The quickest walkthrough uses PowerShell:
+## Verification
 
 ```powershell
-./scripts/verify-reviewer.ps1
-```
-
-It checks registration, verification, zero-balance wallets, demo BET/WIN, replay, history and access rules. To explore manually, use Swagger's **Try it out**:
-
-1. In Users, register with `POST /api/v1/register`:
-   `{"email":"player@example.test","password":"Player-password-123!"}`.
-2. Open [Mailpit](http://127.0.0.1:8025), find the verification email and submit its token to `POST /api/v1/email-verifications` as `{"token":"<token>"}`. The existing key-protected `GET /dev/mailbox` preview also works after SMTP acceptance.
-3. Send the same email/password to `POST /dev/token`. Copy `access_token`, then paste it into Wallet Swagger's **Authorize** dialog.
-4. Read `/api/v1/me/wallets` and `/api/v1/me/wallets/USD/transactions`. New players automatically receive three **zero-balance** wallets; provisioning may take a moment.
-
-### Local demo credentials
-
-These credentials and the token issuer are **Development-only**. Tokens expire after 10 minutes.
-
-| Identity | Credentials | Token endpoint |
-| --- | --- | --- |
-| Funded player | `demo@miniwallet.test` / `Local-demo-password-123!` | `POST /dev/token` |
-| Admin | `admin@miniwallet.test` / `Local-admin-password-123!` | `POST /dev/token` |
-| Provider client | `local-provider` / `local-provider-secret-123!` | `POST /dev/connect/token` |
-
-Providers use a separate machine login:
-
-```json
-{"clientId":"local-provider","clientSecret":"local-provider-secret-123!","scope":"transactions:write"}
-```
-
-Use that provider token for `POST /api/v1/transactions`. The funded demo player ID is `de000000-0000-4000-8000-000000000001`:
-
-```json
-{"externalTransactionId":"demo-bet-001","playerId":"de000000-0000-4000-8000-000000000001","currency":"USD","type":"BET","amount":"10.00"}
-```
-
-Then settle the bet:
-
-```json
-{"externalTransactionId":"demo-win-001","playerId":"de000000-0000-4000-8000-000000000001","currency":"USD","type":"WIN","amount":"25.00","betExternalTransactionId":"demo-bet-001"}
-```
-
-The demo starts with explicit opening credits of **USD 100, EUR 100 and BTC 0.01**; restart does not replenish them. Ordinary registrations stay at zero. One successful WIN per BET is the documented settlement assumption.
-
-Repeat the same request to replay its original result. Use a new transaction ID for a new action; after a timeout, retry the **same ID and payload**. Amounts are decimal strings: USD/EUR allow 2 fractional digits, BTC 8.
-
-Log in as the demo player to inspect its balances/history. Admins can read `/api/v1/players/{playerId}/wallets` and its currency history routes. Players can read only their own wallets; providers cannot use those read routes.
-
-## Test
-
-```sh
 docker compose -f compose.yaml -f compose.tests.yaml run --build --rm tests
 ```
 
-Runs xUnit against real, disposable PostgreSQL test databases. Tests focus on financial rules, concurrent writes, atomicity, replay/recovery and authorization. Application data is preserved. See [verification results](docs/PROGRESS.md).
+Tests focus on financial atomicity, concurrency across hosts, duplicate requests, ownership, database constraints, registration recovery, SMTP and SignalR isolation. The test fixtures create disposable databases. [PROGRESS.md](docs/PROGRESS.md) records actual runs and limitations; [DESIGN.md](DESIGN.md) explains the design and [AI_USAGE.md](AI_USAGE.md) records AI assistance.
 
-## Troubleshooting
+## Earlier development narrative
 
-- **Startup fails:** confirm Docker is running, check port availability, then inspect `docker compose logs postgres wallet-migrate users-migrate`.
-- **Verification message missing:** call `POST /api/v1/email-verifications/resend` with the player's email/password.
-- **401 or 403:** renew the token or use the correct player, admin or provider credentials.
+I used Codex as a coding assistant while building this assessment, and ChatGPT to discuss the candidate brief and prepare the initial implementation prompts. I set the requirements and technical direction, divided the work into stages, and used AI to help with implementation, tests, troubleshooting, and documentation.
 
-See the [API contract](docs/API_CONTRACT.md) for precision, pagination, errors and retry rules; [design](DESIGN.md) for architecture and trade-offs; and [AI usage](AI_USAGE.md) for the development record.
+The AI suggestions were useful, but I had to make decisions about what belonged in the solution. My priority was to meet the assessment requirements within the timebox. The initial plan included more infrastructure than I thought was justified, so I reduced the scope before moving forward. Discussing the brief also helped me clarify the two-service requirement.
+
+Some of the decisions I made during development were:
+- Plan before coding. I asked for a review of the brief and an implementation plan first, so I could assess the API contract, failure scenarios, and assumptions before implementation.
+- Use .NET 8. I changed the initial .NET 10 target to .NET 8 and kept the existing Wallet API project, adding the Users service alongside it.
+- Keep registration recovery practical. I wanted duplicate registration and lost-response scenarios handled without building a general replay framework. The approach uses unique normalized emails, durable registration records, and recovery through login or verification resend.
+- Limit worker infrastructure. I chose one Users background worker instead of distributed worker leases. Notifications are persisted, and the Wallet service handles repeated delivery safely.
+- Test financial concurrency explicitly. I requested a scenario where two simultaneous bets of 80 compete against a balance of 100. The required result was one accepted bet, one rejection, and a remaining balance of 20. Verification included two Wallet hosts sharing PostgreSQL.
+The generated code was not correct on the first attempt. Builds and tests exposed several issues that needed follow-up:
+- Package compatibility and some .NET 8 API usage caused warnings or compilation failures.
+- The first rollback test did not exercise the intended failure. It was replaced with a PostgreSQL trigger in the disposable test database.
+- Transient database failures returned HTTP 500 instead of the intended retryable 503. Both services were corrected, and a registration regression test was added.
+- External transaction ID validation needed stricter regex anchors to reject a trailing newline.
+- The final startup checks exposed a PostgreSQL readiness check that needed to use TCP rather than a local socket.
+I used these failures to direct further fixes and verification rather than treating generated code as finished. The commands, results, and limitations are recorded in docs/PROGRESS.md.
+
+I also made deliberate tradeoffs to keep the implementation manageable: one PostgreSQL server with separate service databases, HTTP delivery with a durable outbox, development token and mailbox implementations, one successful WIN settlement per BET, bounded page-based pagination, and explicit demo funding while new wallets start at zero. I left out SignalR and additional production infrastructure to keep the work focused on the required behavior and correctness.
+
+Codex helped run builds, tests, and local integration checks. The final automated run passed 74 tests covering domain rules, database constraints, concurrent transactions, duplicate requests, authorization, and outage recovery. An isolated Docker Compose startup and reviewer walkthrough also passed, and ordinary service restarts preserved account, wallet, and transaction data. DESIGN.md was rendered and checked against the two-page limit.
+
+In a later documentation pass, I asked Codex to document the existing domain and API contracts and connect XML comments to Swagger without changing application behavior. That work exposed misplaced XML comments and missing response metadata, which were corrected. Verification included solution builds, publishing both APIs with their XML files, 35 focused tests, and browser checks of both Swagger UIs. The full PostgreSQL suite was not rerun for that follow-up.
+
+AI helped me move faster, but I remained responsible for the scope, technical choices, acceptance criteria, and deciding what needed further verification. The checks above provide evidence for the implemented scenarios; they are not exhaustive production testing.
+Live player balances are now available through the single-instance Wallet SignalR hub. See [docs/REALTIME.md](docs/REALTIME.md) for behavior, setup, and limitations; this was added after the assessment scope described above.
+
+Audit records and JSON application logs are documented in [AUDITING.md](docs/AUDITING.md), including read-only inspection commands and failure/retention limits.

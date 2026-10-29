@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MiniWallet.Application;
+using MiniWallet.API.Wallet;
+using MiniWallet.Application.Services;
 
 namespace MiniWallet.API.Controllers;
 

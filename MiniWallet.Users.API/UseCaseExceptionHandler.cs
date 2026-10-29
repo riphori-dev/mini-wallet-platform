@@ -24,6 +24,7 @@ internal sealed class UseCaseExceptionHandler : IExceptionHandler
             Title = failure?.Message ?? "Database temporarily unavailable."
         };
         problem.Extensions["code"] = failure?.Code ?? "transient_unavailability";
+        MiniWallet.Auditing.AuditDetails.Set(context, "ErrorCode", failure?.Code ?? "transient_unavailability");
         if (failure?.Errors is not null) problem.Extensions["errors"] = failure.Errors;
         ApiProblems.Customize(new ProblemDetailsContext { HttpContext = context, ProblemDetails = problem });
         context.Response.StatusCode = problem.Status.Value;

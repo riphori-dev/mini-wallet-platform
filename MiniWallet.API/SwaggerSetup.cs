@@ -1,6 +1,7 @@
 using Microsoft.OpenApi;
 using Microsoft.AspNetCore.Authorization;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using MiniWallet.API.Wallet;
 
 namespace MiniWallet.API;
 

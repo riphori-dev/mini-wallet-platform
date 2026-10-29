@@ -8,6 +8,8 @@ using MiniWallet.Application.Interfaces;
 using MiniWallet.Application.Validations;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Logging.AddJsonConsole(options => options.IncludeScopes = true);
+builder.Services.AddSingleton<MiniWallet.Auditing.IAuditWriter, MiniWallet.Auditing.PostgresAuditWriter>();
 builder.Services.AddDbContext<WalletDbContext>(options => options.UseNpgsql(
     builder.Configuration.GetConnectionString("Database")
     ?? throw new InvalidOperationException("ConnectionStrings:Database is required.")));
@@ -22,6 +24,8 @@ builder.Services.AddScoped<ProvisionPlayer>();
 builder.Services.AddScoped<IValidator<PlayerRegistered>, PlayerRegisteredValidator>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<ITransactionStore, TransactionStore>();
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IBalanceNotifications, BalanceNotifications>();
 builder.Services.AddScoped<ITransactionHandler, BetHandler>();
 builder.Services.AddScoped<ITransactionHandler, WinHandler>();
 builder.Services.AddScoped<IValidator<TransactionRequest>, TransactionValidator>();
@@ -44,6 +48,7 @@ if (args.Contains("--migrate"))
 }
 
 // Hosts never migrate. Compose runs the migrator to completion before starting hosts.
+app.UseMiddleware<MiniWallet.Auditing.AuditMiddleware>("Wallet");
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 if (app.Environment.IsDevelopment())
@@ -54,6 +59,7 @@ if (app.Environment.IsDevelopment())
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<BalanceHub>("/hubs/balance", options => options.CloseOnAuthenticationExpiration = true);
 app.Run();
 
 public partial class Program;

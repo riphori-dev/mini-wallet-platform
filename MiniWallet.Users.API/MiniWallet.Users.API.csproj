@@ -3,6 +3,7 @@
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../Shared/Auditing/AuditTrail.cs" Link="Auditing/AuditTrail.cs" />
     <ProjectReference Include="../MiniWallet.Users.Application/MiniWallet.Users.Application.csproj" />
     <ProjectReference Include="../MiniWallet.Users.Infrastructure/MiniWallet.Users.Infrastructure.csproj" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.3.1" />

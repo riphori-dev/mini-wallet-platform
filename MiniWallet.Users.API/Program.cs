@@ -2,10 +2,14 @@ using Microsoft.EntityFrameworkCore;
 using MiniWallet.Users.Infrastructure;
 using MiniWallet.Users.API;
 using FluentValidation;
-using MiniWallet.Users.Application;
 using System.Text.Json.Serialization;
+using MiniWallet.Users.Application;
+using MiniWallet.Users.Infrastructure.Development;
+using MiniWallet.Users.Infrastructure.Users;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Logging.AddJsonConsole(options => options.IncludeScopes = true);
+builder.Services.AddSingleton<MiniWallet.Auditing.IAuditWriter, MiniWallet.Auditing.PostgresAuditWriter>();
 builder.Services.AddDbContext<UsersDbContext>(options => options.UseNpgsql(
     builder.Configuration.GetConnectionString("Database")
     ?? throw new InvalidOperationException("ConnectionStrings:Database is required.")));
@@ -55,6 +59,7 @@ if (args.Contains("--migrate"))
 }
 
 // Hosts never migrate. Compose runs the migrator to completion before starting hosts.
+app.UseMiddleware<MiniWallet.Auditing.AuditMiddleware>("Users");
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 if (app.Environment.IsDevelopment())

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MiniWallet.API.Wallet;
 using MiniWallet.Application;
 
 namespace MiniWallet.API.Controllers;
@@ -31,8 +32,18 @@ public sealed class TransactionsController(SubmitTransaction submit) : Controlle
     [ProducesResponseType<ProblemDetails>(503)]
     public async Task<IActionResult> Execute(TransactionRequest request, CancellationToken ct)
     {
+        MiniWallet.Auditing.AuditDetails.Set(HttpContext, "TargetPlayerId", request.PlayerId.ToString());
+        MiniWallet.Auditing.AuditDetails.Set(HttpContext, "ExternalTransactionId", request.ExternalTransactionId);
+        MiniWallet.Auditing.AuditDetails.Set(HttpContext, "TransactionType", request.Type);
+        MiniWallet.Auditing.AuditDetails.Set(HttpContext, "Currency", request.Currency);
         var result = await submit.ExecuteAsync(User.FindFirst("provider_id")!.Value, request,
             Activity.Current?.Id ?? HttpContext.TraceIdentifier, ct);
+        MiniWallet.Auditing.AuditDetails.Set(HttpContext, "IsReplay", result.IsReplay.ToString());
+        if (result.Status == 409)
+        {
+            using var problem = System.Text.Json.JsonDocument.Parse(result.Body);
+            MiniWallet.Auditing.AuditDetails.Set(HttpContext, "ErrorCode", problem.RootElement.GetProperty("code").GetString());
+        }
         return new ContentResult { StatusCode = result.Status, Content = result.Body, ContentType = result.ContentType };
     }
 }

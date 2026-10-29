@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MimeKit;
 using MiniWallet.Users.Application;
+using MiniWallet.Users.Infrastructure.Development;
 
 namespace MiniWallet.Users.Infrastructure;
 
