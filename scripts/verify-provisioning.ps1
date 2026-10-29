@@ -22,7 +22,7 @@ FROM "Wallets" WHERE "PlayerId" = '$player';
 }
 function Register {
     $email = 'scenario-' + [guid]::NewGuid().ToString('N') + '@example.test'
-    $response = Invoke-WebRequest http://127.0.0.1:5081/api/v1/players -Method Post -UseBasicParsing -TimeoutSec 5 -ContentType application/json -Body (@{
+    $response = Invoke-WebRequest http://127.0.0.1:5081/api/v1/register -Method Post -UseBasicParsing -TimeoutSec 5 -ContentType application/json -Body (@{
         email = $email; password = 'Scenario-password-123!'
     } | ConvertTo-Json)
     if ($response.StatusCode -ne 201) { throw 'Registration was not accepted' }

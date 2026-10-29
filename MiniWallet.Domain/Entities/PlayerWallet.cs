@@ -1,4 +1,4 @@
-namespace MiniWallet.Domain;
+namespace MiniWallet.Domain.Entities;
 
 /// <summary>A balance owned by one player in one supported currency.</summary>
 /// <remarks>Creation starts at zero. Database uniqueness, ownership authorization and concurrent write protection are enforced outside this entity.</remarks>

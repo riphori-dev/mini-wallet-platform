@@ -5,7 +5,11 @@ services:
       dockerfile: Dockerfile.tests
     environment:
       TestPostgres: Host=postgres;Database=postgres;Username=postgres;Password=postgres_local_only
+      TestMailpitSmtpHost: mailpit
+      TestMailpitHttpUrl: http://mailpit:8025
     depends_on:
+      mailpit:
+        condition: service_healthy
       postgres:
         condition: service_healthy
 

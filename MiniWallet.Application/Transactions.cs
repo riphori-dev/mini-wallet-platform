@@ -1,7 +1,8 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using FluentValidation;
-using MiniWallet.Domain;
+using MiniWallet.Application.Interfaces;
+using MiniWallet.Domain.Entities;
 
 namespace MiniWallet.Application;
 
@@ -45,15 +46,6 @@ public sealed class WalletFailure(int status, string code, string message,
     public string Code { get; } = code;
     public Dictionary<string, string[]>? Errors { get; } = errors;
 }
-public interface ITransactionStore
-{
-    Task<StoredResponse> ExecuteAsync(TransactionCommand command, ITransactionHandler handler, string traceId, CancellationToken ct);
-}
-public interface ITransactionHandler
-{
-    string Type { get; }
-    FinancialEntry Apply(PlayerWallet wallet, TransactionCommand command, FinancialEntry? bet, bool settled, DateTimeOffset now);
-}
 public sealed class BetHandler : ITransactionHandler
 {
     public string Type => "BET";
@@ -88,21 +80,6 @@ public static class AmountText
             return true;
         }
         catch (Exception ex) when (ex is ArgumentException or FinancialRuleException) { return false; }
-    }
-}
-public sealed class TransactionValidator : AbstractValidator<TransactionRequest>
-{
-    private const string IdPattern = "\\A[A-Za-z0-9._:-]{1,128}\\z";
-    public TransactionValidator()
-    {
-        RuleFor(x => x.ExternalTransactionId).NotEmpty().Matches(IdPattern);
-        RuleFor(x => x.PlayerId).NotEmpty();
-        RuleFor(x => x.Currency).Must(x => x is "USD" or "EUR" or "BTC");
-        RuleFor(x => x.Type).Must(x => x is "BET" or "WIN");
-        RuleFor(x => x.Amount).Must((request, amount) => AmountText.TryParse(request.Currency, amount, out _))
-            .WithMessage("Positive invariant decimal string required; USD/EUR scale <=2, BTC <=8, maximum 99999999999999999999.99999999.");
-        When(x => x.Type == "WIN", () => RuleFor(x => x.BetExternalTransactionId).NotEmpty().Matches(IdPattern));
-        When(x => x.Type == "BET", () => RuleFor(x => x.BetExternalTransactionId).Null());
     }
 }
 public sealed class SubmitTransaction(IValidator<TransactionRequest> validator, ITransactionStore store,

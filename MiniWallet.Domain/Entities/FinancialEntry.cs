@@ -1,4 +1,4 @@
-namespace MiniWallet.Domain;
+namespace MiniWallet.Domain.Entities;
 
 /// <summary>A ledger snapshot of an accepted wallet operation.</summary>
 /// <remarks>Record captures the wallet after mutation; it does not debit, credit or persist it. BET lookup and settlement uniqueness belong to the use case and persistence boundary.</remarks>

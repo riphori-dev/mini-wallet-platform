@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace MiniWallet.Domain;
+namespace MiniWallet.Domain.Entities;
 
 /// <summary>A rejected financial operation identified by a stable business error code.</summary>
 /// <param name="code">The business failure code, also used as the exception message.</param>

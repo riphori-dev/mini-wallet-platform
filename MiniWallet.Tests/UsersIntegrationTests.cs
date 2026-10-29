@@ -108,7 +108,7 @@ public sealed class UsersDatabaseFixture : IAsyncLifetime
     public async Task<string> Register(string? email = null)
     {
         email ??= $"p-{Guid.NewGuid():N}@example.test";
-        var response = await Client.PostAsJsonAsync("/api/v1/players", new { email, password = Password });
+        var response = await Client.PostAsJsonAsync("/api/v1/register", new { email, password = Password });
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         return email;
     }
@@ -142,7 +142,7 @@ public sealed partial class UsersIntegrationTests(UsersDatabaseFixture fixture) 
         var token = fixture.Mailbox.Read().Last(x => x.Email == email).Token;
         Assert.NotEqual(token, user.VerificationTokenHash);
         Assert.Equal(new VerificationSecrets().Hash(token), user.VerificationTokenHash);
-        var duplicate = await fixture.Client.PostAsJsonAsync("/api/v1/players",
+        var duplicate = await fixture.Client.PostAsJsonAsync("/api/v1/register",
             new { email = " " + email.ToUpperInvariant() + " ", password = UsersDatabaseFixture.Password });
         Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
         Assert.Equal(1, await db.Users.CountAsync(x => x.Email == email));
@@ -154,7 +154,7 @@ public sealed partial class UsersIntegrationTests(UsersDatabaseFixture fixture) 
     {
         var email = $"race-{Guid.NewGuid():N}@example.test";
         var responses = await Task.WhenAll(Enumerable.Range(0, 2).Select(_ =>
-            fixture.Client.PostAsJsonAsync("/api/v1/players", new { email, password = UsersDatabaseFixture.Password })));
+            fixture.Client.PostAsJsonAsync("/api/v1/register", new { email, password = UsersDatabaseFixture.Password })));
         Assert.Single(responses, x => x.StatusCode == HttpStatusCode.Created);
         Assert.Single(responses, x => x.StatusCode == HttpStatusCode.Conflict);
         await using var db = fixture.Db();
@@ -180,13 +180,13 @@ public sealed partial class UsersIntegrationTests(UsersDatabaseFixture fixture) 
     [PostgresFact]
     public async Task Invalid_input_and_escalation_fields_are_rejected_without_registration()
     {
-        var response = await fixture.Client.PostAsJsonAsync("/api/v1/players", new { email = "bad", password = "short" });
+        var response = await fixture.Client.PostAsJsonAsync("/api/v1/register", new { email = "bad", password = "short" });
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         using var problem = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.Equal("invalid_request", problem.RootElement.GetProperty("code").GetString());
         Assert.True(problem.RootElement.TryGetProperty("errors", out _));
         Assert.True(problem.RootElement.TryGetProperty("traceId", out _));
-        Assert.Equal(HttpStatusCode.BadRequest, (await fixture.Client.PostAsJsonAsync("/api/v1/players",
+        Assert.Equal(HttpStatusCode.BadRequest, (await fixture.Client.PostAsJsonAsync("/api/v1/register",
             new { email = "escalate@example.test", password = UsersDatabaseFixture.Password, role = "admin" })).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, (await fixture.Client.PostAsJsonAsync("/dev/token",
             new { email = "admin@miniwallet.test", password = "Local-admin-password-123!", sub = Guid.NewGuid(), role = "provider" })).StatusCode);

@@ -1,4 +1,4 @@
-namespace MiniWallet.Domain;
+namespace MiniWallet.Domain.Entities;
 
 /// <summary>A supported wallet denomination with its permitted fractional precision.</summary>
 public sealed record Currency

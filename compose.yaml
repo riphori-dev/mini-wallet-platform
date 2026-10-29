@@ -1,5 +1,15 @@
 name: miniwallet
 services:
+  mailpit:
+    image: axllent/mailpit:v1.31
+    environment:
+      MP_DATABASE: /data/mailpit.db
+      MP_DISABLE_VERSION_CHECK: "true"
+    volumes:
+      - mailpit-data:/data
+    ports:
+      - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
+      - "127.0.0.1:${MAILPIT_SMTP_PORT:-1025}:1025"
   postgres:
     image: postgres:16
     environment:
@@ -59,12 +69,16 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       Delivery__UsersBaseUrl: http://users:8080
       Delivery__WalletBaseUrl: http://wallet:8080
+      Email__Smtp__Host: mailpit
       ConnectionStrings__Database: Host=postgres;Database=users;Username=users_app;Password=users_local_only
     ports:
       - "127.0.0.1:${USERS_PORT:-5081}:8080"
     depends_on:
+      mailpit:
+        condition: service_healthy
       users-migrate:
         condition: service_completed_successfully
 volumes:
   postgres-data:
+  mailpit-data:
 

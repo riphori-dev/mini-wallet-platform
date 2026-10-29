@@ -9,7 +9,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MiniWallet.Application;
-using MiniWallet.Domain;
+using MiniWallet.Domain.Entities;
 using MiniWallet.Infrastructure;
 using Npgsql;
 using Xunit;

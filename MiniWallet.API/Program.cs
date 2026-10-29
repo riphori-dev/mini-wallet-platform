@@ -4,6 +4,8 @@ using MiniWallet.API;
 using FluentValidation;
 using MiniWallet.Application;
 using System.Text.Json.Serialization;
+using MiniWallet.Application.Interfaces;
+using MiniWallet.Application.Validations;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<WalletDbContext>(options => options.UseNpgsql(

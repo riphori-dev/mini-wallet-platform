@@ -56,7 +56,7 @@ if ($CheckPersistence) {
 }
 
 $email = 'reviewer-' + [guid]::NewGuid().ToString('N') + '@example.test'
-$registration = Post "$UsersUrl/api/v1/players" @{email=$email;password='Reviewer-password-123!'}
+$registration = Post "$UsersUrl/api/v1/register" @{email=$email;password='Reviewer-password-123!'}
 if ($registration.StatusCode -ne 201) { throw 'Registration failed' }
 $player = $registration.Content | ConvertFrom-Json
 $messages = Get "$UsersUrl/dev/mailbox" @{'X-Dev-Mailbox-Key'='local-mailbox-key'}

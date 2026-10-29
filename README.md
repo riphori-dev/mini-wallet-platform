@@ -14,6 +14,9 @@ Databases, migrations and demo accounts are created automatically. No host .NET 
 
 - [Users Swagger](http://127.0.0.1:5081/swagger)
 - [Wallet Swagger](http://127.0.0.1:5080/swagger)
+- [Verification email inbox (Mailpit)](http://127.0.0.1:8025)
+
+Mailpit captures verification emails locally; no external email account or credentials are needed. For local debugging, run `docker compose up -d mailpit` before starting Users. See [SMTP setup and recovery](docs/SMTP.md).
 
 Data survives restart and `docker compose down`. Adding `-v` deletes the database volume.
 
@@ -37,7 +40,7 @@ An unfinished bet is saved locally with its exact transaction IDs and payload. A
 
 The **API explorer** link opens the original endpoint playground for registration, verification, player/admin login, wallet reads, manual provider requests and health checks. Credentials and tokens are redacted from its inspector.
 
-For a new account, enter a new email and a password of at least 12 characters under **Player onboarding**, register, read the development mailbox, choose **Use token**, and verify. Then sign in under Wallets. New wallets start at zero and may take a moment to provision.
+For a new account, enter a new email and a password of at least 12 characters under **Player onboarding**, register, read the development mailbox preview or open Mailpit, paste the token, and verify. Then sign in under Wallets. New wallets start at zero and may take a moment to provision.
 
 The Vite server proxies `/users-api` and `/wallet-api` to ports 5081 and 5080, so no backend CORS changes are needed. To use different ports, copy `MiniWallet.UI/.env.example` to `MiniWallet.UI/.env.local`, adjust the targets, and restart Vite. Tokens and credentials stay in browser memory and are cleared by a page refresh. Development issuers and the mailbox require the APIs to run in Development. `npm run build` creates a production bundle; `npm run preview` serves it locally with the same proxy. Deploying the bundle elsewhere requires equivalent reverse proxy routes.
 
@@ -51,9 +54,9 @@ The quickest walkthrough uses PowerShell:
 
 It checks registration, verification, zero-balance wallets, demo BET/WIN, replay, history and access rules. To explore manually, use Swagger's **Try it out**:
 
-1. In Users, register with `POST /api/v1/players`:
+1. In Users, register with `POST /api/v1/register`:
    `{"email":"player@example.test","password":"Player-password-123!"}`.
-2. Open `GET /dev/mailbox` with header `X-Dev-Mailbox-Key: local-mailbox-key`. Copy the verification token and send it to `POST /api/v1/email-verifications` as `{"token":"<token>"}`.
+2. Open [Mailpit](http://127.0.0.1:8025), find the verification email and submit its token to `POST /api/v1/email-verifications` as `{"token":"<token>"}`. The existing key-protected `GET /dev/mailbox` preview also works after SMTP acceptance.
 3. Send the same email/password to `POST /dev/token`. Copy `access_token`, then paste it into Wallet Swagger's **Authorize** dialog.
 4. Read `/api/v1/me/wallets` and `/api/v1/me/wallets/USD/transactions`. New players automatically receive three **zero-balance** wallets; provisioning may take a moment.
 

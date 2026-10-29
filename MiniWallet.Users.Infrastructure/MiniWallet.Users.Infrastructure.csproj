@@ -3,6 +3,7 @@
     <ProjectReference Include="../MiniWallet.Users.Application/MiniWallet.Users.Application.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="MailKit" Version="4.18.2" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />

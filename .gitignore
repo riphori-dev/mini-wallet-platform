@@ -5,6 +5,8 @@
 .env
 TestResults/
 .review/
+**/node_modules/
+**/dist/
 tmp/
 **/.env.*
 !**/.env.example

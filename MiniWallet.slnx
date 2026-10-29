@@ -1,11 +1,15 @@
 <Solution>
-  <Project Path="MiniWallet.API/MiniWallet.API.csproj" />
-  <Project Path="MiniWallet.Domain/MiniWallet.Domain.csproj" />
-  <Project Path="MiniWallet.Application/MiniWallet.Application.csproj" />
-  <Project Path="MiniWallet.Infrastructure/MiniWallet.Infrastructure.csproj" />
-  <Project Path="MiniWallet.Users.API/MiniWallet.Users.API.csproj" />
-  <Project Path="MiniWallet.Users.Domain/MiniWallet.Users.Domain.csproj" />
-  <Project Path="MiniWallet.Users.Application/MiniWallet.Users.Application.csproj" />
-  <Project Path="MiniWallet.Users.Infrastructure/MiniWallet.Users.Infrastructure.csproj" />
-  <Project Path="MiniWallet.Tests/MiniWallet.Tests.csproj" />
+  <Folder Name="/MiniWallet.Users/">
+    <Project Path="MiniWallet.Users.API/MiniWallet.Users.API.csproj" />
+    <Project Path="MiniWallet.Users.Application/MiniWallet.Users.Application.csproj" />
+    <Project Path="MiniWallet.Users.Domain/MiniWallet.Users.Domain.csproj" />
+    <Project Path="MiniWallet.Users.Infrastructure/MiniWallet.Users.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/MiniWallet.Wallet/">
+    <Project Path="MiniWallet.API/MiniWallet.API.csproj" />
+    <Project Path="MiniWallet.Application/MiniWallet.Application.csproj" />
+    <Project Path="MiniWallet.Domain/MiniWallet.Domain.csproj" />
+    <Project Path="MiniWallet.Infrastructure/MiniWallet.Infrastructure.csproj" />
+    <Project Path="MiniWallet.Tests/MiniWallet.Tests.csproj" />
+  </Folder>
 </Solution>

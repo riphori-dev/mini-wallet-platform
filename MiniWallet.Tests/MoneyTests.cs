@@ -1,5 +1,6 @@
 using MiniWallet.Application;
-using MiniWallet.Domain;
+using MiniWallet.Application.Validations;
+using MiniWallet.Domain.Entities;
 using Xunit;
 
 namespace MiniWallet.Tests;

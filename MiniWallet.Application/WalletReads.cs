@@ -38,16 +38,6 @@ public interface IWalletReader
     Task<PlayerBalances?> BalancesAsync(Guid playerId, CancellationToken ct);
     Task<HistoryPage?> HistoryAsync(HistoryRequest request, CancellationToken ct);
 }
-public sealed class HistoryValidator : AbstractValidator<HistoryRequest>
-{
-    public HistoryValidator()
-    {
-        RuleFor(x => x.PlayerId).NotEmpty();
-        RuleFor(x => x.Currency).Must(x => x is "USD" or "EUR" or "BTC");
-        RuleFor(x => x.Page).InclusiveBetween(1, 10_000);
-        RuleFor(x => x.PageSize).InclusiveBetween(1, 100);
-    }
-}
 public sealed class ReadWallets(IWalletReader reader, IValidator<HistoryRequest> validator)
 {
     public async Task<PlayerBalances> BalancesAsync(Guid playerId, CancellationToken ct)

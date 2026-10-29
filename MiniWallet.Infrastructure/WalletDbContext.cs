@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using MiniWallet.Domain;
+using MiniWallet.Domain.Entities;
 
 namespace MiniWallet.Infrastructure;
 

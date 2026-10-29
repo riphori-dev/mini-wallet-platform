@@ -105,3 +105,41 @@ Checks and actual commands:
 Corrections during verification: initial endpoint comments were placed below attributes (CS1587), then moved above them. The first new OpenAPI assertion caught an absent inferred history schema after XML response comments; explicit success response metadata fixed it. Final focused checks pass without weakening those assertions.
 
 Remaining limitation: the default SDK-8 solution command still cannot read the existing .slnx; direct project build or the installed MSBuild-10 command above works. No product features or optional infrastructure added. Existing DESIGN.md, MiniWallet.slnx and README.md edits were preserved. Estimated effort: about 30 minutes. No commit or push performed. Suggested commit: `docs: document domain rules and API contracts in Swagger`.
+
+
+## SMTP verification email (requested enhancement)
+
+Implemented MailKit 4.18.2 SMTP behind the existing Users Application IEmailSender port. Domain, token hashing/expiry/atomic consumption and registration/outbox transactions are unchanged. Infrastructure owns SMTP configuration, message composition, bounded async sending and a Development preview decorator. The plain-text message includes a token, API request body, UTC expiry and resend guidance; it deliberately has no nonfunctional verification link. SMTP success means server acceptance only. A failed QUIT after acceptance does not reverse that result. Logs omit tokens, credentials and server response bodies.
+
+Compose now starts healthy Mailpit v1.31 with a persistent inbox volume and host-loopback SMTP/UI ports 1025/8025. Users connects to mailpit inside Compose and localhost in local Development. Existing Swagger/API-explorer mailbox previews and reviewer scripts still work after SMTP acceptance. Outside Development, SMTP must be explicitly configured and requires StartTls or SslOnConnect; plaintext mode is Development-only. SMTP credentials remain optional, validated as a pair, and untracked when supplied. No external accounts, automatic email retry worker or durable plaintext mail queue added. Registration still returns committed 201 plus unavailable on send failure; authenticated resend rotates the token and recovers after SMTP returns.
+
+Requirement-to-code/test map:
+
+| Requested behavior | Implementation | Evidence |
+| --- | --- | --- |
+| Actual SMTP verification delivery | SmtpEmailSender.cs, Users Program.cs, appsettings.Development.json | SmtpVerificationTests: registration -> actual Mailpit message -> verify -> login; hash-only PostgreSQL storage |
+| Useful verification message | SmtpEmailSender plain-text MIME message | SmtpEmailTests: sender, recipient, subject, token, expiry, API instructions |
+| Failure/recovery without losing registration | Existing UserUseCases acceptance/resend boundary plus bounded SMTP sender | Real PostgreSQL/Mailpit outage -> 201 unavailable -> failed resend 503 -> recovered resend -> verify; one player/outbox |
+| Safe transport settings and preview | VerificationEmailSetup and DevelopmentSmtpEmailSender | TLS/config validation, rejection leaves no preview, cancellation/timeout, SMTP acceptance followed by lost QUIT |
+| One-command startup and review | compose.yaml, compose.tests.yaml, docs/SMTP.md, README/API contract/Swagger text | Isolated Compose build/start, reviewer walkthrough and browser inbox inspection |
+
+Actual commands/results:
+
+- PASS `dotnet add MiniWallet.Users.Infrastructure/MiniWallet.Users.Infrastructure.csproj package MailKit`: resolved stable 4.18.2 and restored compatible net8.0 dependencies.
+- Initial full-suite build FAIL: existing folder refactor omitted interface/validator imports in two test files. Added only the missing imports. Initial executable suite FAIL: 16 tests still used removed registration route /api/v1/players; existing controller uses /api/v1/register. Updated registration calls in tests, walkthrough scripts and docs, without changing the controller or admin /players/... routes. An SMTP nullable warning and new xUnit assertion warning were fixed before final runs.
+- PASS host `dotnet test MiniWallet.Tests/MiniWallet.Tests.csproj --no-restore -v minimal`, with TestPostgres pointing to the existing local PostgreSQL server on port 55432 and TestMailpitHttpUrl=http://127.0.0.1:8025: **84 passed, 0 failed, 0 skipped**. PostgreSQL fixtures create/drop their own test databases; application databases are preserved.
+- PASS `docker compose config --quiet` and final `git diff --check`.
+- PASS isolated `docker compose -p miniwallet-smtp-review up -d --build`, with WALLET_PORT=5280, USERS_PORT=5281, MAILPIT_UI_PORT=8125, MAILPIT_SMTP_PORT=1125. Fresh project volumes initialized automatically; migrations exited successfully and both hosts started.
+- PASS `./scripts/verify-reviewer.ps1 -UsersUrl http://127.0.0.1:5281 -WalletUrl http://127.0.0.1:5280 -StatePath .review/smtp-review-state.json`: Swagger/readiness, registration/verification/three zero wallets, demo BET/WIN/replay/history, admin access and player/provider isolation. Confirmed the actual SMTP message in Mailpit's API and browser inbox.
+- PASS isolated `docker compose -p miniwallet-smtp-review -f compose.yaml -f compose.tests.yaml run --build --rm tests` with the same port overrides: Release solution build had zero warnings/errors; **84 passed, 0 failed, 0 skipped**, including real SMTP/PostgreSQL tests.
+- PASS ordinary Mailpit restart: 3 inbox messages before and after restart. Browser confirmed rendered sender, recipient, token, UTC expiry and POST verification instructions.
+- Cleanup: removed only miniwallet-smtp-review containers/network and its two newly created volumes. Original miniwallet PostgreSQL container/volume retained; the requested local Mailpit remains healthy on 1025/8025.
+- NOT RUN external authenticated SMTP/TLS handshake or Gmail/Outlook delivery: no external account selected or credentials supplied. Local Mailpit captures mail; it does not deliver to internet recipients. TLS configuration is validated, but real provider delivery needs that provider's credentials and authorized sender.
+
+Files: new SMTP sender/setup, two SMTP test files and docs/SMTP.md; updated Users composition/settings/package/Swagger, Compose/test Compose, .dockerignore, README/API contract/design/AI usage/progress and stale registration callers. Existing UI, domain folder refactor, launch settings and Wallet changes preserved; two test files received imports needed by that refactor. No changes to financial behavior or public funding. Estimated effort: 15–20 minutes. No commit or push performed. Suggested commit: `feat: send verification emails through SMTP with local Mailpit`.
+
+## Client brief comparison review
+
+Analysis only; implementation unchanged. The supplied Downloads/candidate-brief.md and canonical brief have identical SHA-256 hashes. Added docs/BRIEF_REVIEW.md with requirement-to-implementation/test mapping, absent optional features, concrete REFUND/BONUS/JACKPOT extension points, SignalR multi-instance considerations, and submission priorities. No missing required product feature identified in the inspected/tested working tree. Future transaction types require validator/domain/database changes; a new-handler mutation followed by business rejection needs explicit rollback/restore testing before extensions are enabled. No SignalR or new transaction kinds implemented.
+
+PASS fresh `dotnet test MiniWallet.Tests/MiniWallet.Tests.csproj --no-restore -v minimal` with TestPostgres at localhost:55432 and TestMailpitHttpUrl=http://127.0.0.1:8025: **84 passed, 0 failed, 0 skipped**. Inspected migrations, authorization, delivery, money, dependency direction, Swagger, Compose and submission documents. Existing working-tree changes preserved. NOT RUN again: clean-clone/fresh Compose startup, final DESIGN PDF pagination, React build or external SMTP delivery; prior results remain historical. Current Git state includes untracked moved Domain/Application/UI/SMTP work, so final submitted-commit verification remains necessary. Estimated review effort: 10–15 minutes. No commit or push performed. Suggested documentation commit: `docs: compare implementation with client brief and roadmap`.

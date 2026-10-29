@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using MiniWallet.Application;
+using MiniWallet.Domain.Entities;
 using MiniWallet.Infrastructure;
 using MiniWallet.Users.Infrastructure;
 using Npgsql;
@@ -180,7 +181,7 @@ public sealed class ProvisioningTests(ProvisioningFixture fixture) : IClassFixtu
         Assert.Equal(HttpStatusCode.NoContent, (await fixture.Client.PostAsJsonAsync("/internal/v1/player-registrations",
             registration with { EventId = Guid.NewGuid() })).StatusCode);
         Assert.Equal(3, await db.Wallets.CountAsync(x => x.PlayerId == registration.PlayerId));
-        Assert.Equal(7m, await db.Wallets.Where(x => x.PlayerId == registration.PlayerId && x.Currency == MiniWallet.Domain.Currency.Usd).Select(x => x.Balance).SingleAsync());
+        Assert.Equal(7m, await db.Wallets.Where(x => x.PlayerId == registration.PlayerId && x.Currency == Currency.Usd).Select(x => x.Balance).SingleAsync());
     }
 
     [PostgresFact]

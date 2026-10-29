@@ -27,18 +27,16 @@ builder.Services.AddScoped<IValidator<CredentialsRequest>, CredentialsValidator>
 builder.Services.AddScoped<IValidator<VerifyRequest>, VerificationValidator>();
 builder.Services.AddScoped<IValidator<MachineTokenRequest>, MachineTokenValidator>();
 builder.Services.AddRegistrationDelivery(builder.Configuration);
+builder.Services.AddVerificationEmail(builder.Configuration, builder.Environment.IsDevelopment());
 if (builder.Environment.IsDevelopment())
 {
     string Required(string name) => builder.Configuration[name]
         ?? throw new InvalidOperationException($"Missing development configuration: {name}");
-    builder.Services.AddSingleton<DevelopmentMailbox>();
-    builder.Services.AddSingleton<IEmailSender>(sp => sp.GetRequiredService<DevelopmentMailbox>());
     builder.Services.AddSingleton(new DevelopmentIssuerSettings(Required("Jwt:Issuer"), Required("Jwt:SigningKey"),
         Required("Development:ProviderClientId"), Required("Development:ProviderSecret"),
         Required("Development:InternalClientId"), Required("Development:InternalSecret")));
     builder.Services.AddSingleton<IAccessTokenIssuer, DevelopmentTokenIssuer>();
 }
-else builder.Services.AddSingleton<IEmailSender, UnavailableEmailSender>();
 
 var app = builder.Build();
 if (args.Contains("--migrate"))

@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MiniWallet.Application;
-using MiniWallet.Domain;
+using MiniWallet.Domain.Entities;
 
 namespace MiniWallet.Infrastructure;
 

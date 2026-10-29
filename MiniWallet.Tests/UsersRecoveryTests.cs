@@ -23,7 +23,7 @@ public sealed partial class UsersIntegrationTests
             """);
         try
         {
-            var failed = await fixture.Client.PostAsJsonAsync("/api/v1/players", request);
+            var failed = await fixture.Client.PostAsJsonAsync("/api/v1/register", request);
             Assert.Equal(HttpStatusCode.ServiceUnavailable, failed.StatusCode);
             Assert.Equal("application/problem+json", failed.Content.Headers.ContentType?.MediaType);
             Assert.Equal("1", Assert.Single(failed.Headers.GetValues("Retry-After")));
@@ -43,7 +43,7 @@ public sealed partial class UsersIntegrationTests
                 DROP FUNCTION test_fail_registration();
                 """);
         }
-        Assert.Equal(HttpStatusCode.Created, (await fixture.Client.PostAsJsonAsync("/api/v1/players", request)).StatusCode);
+        Assert.Equal(HttpStatusCode.Created, (await fixture.Client.PostAsJsonAsync("/api/v1/register", request)).StatusCode);
         await using var accepted = fixture.Db();
         var user = await accepted.Users.SingleAsync(x => x.Email == email);
         Assert.Equal(1, await accepted.RegistrationDeliveries.CountAsync(x => x.PlayerId == user.Id));

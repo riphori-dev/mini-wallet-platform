@@ -1,7 +1,8 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using MiniWallet.Application;
-using MiniWallet.Domain;
+using MiniWallet.Application.Interfaces;
+using MiniWallet.Domain.Entities;
 
 namespace MiniWallet.Infrastructure;
 

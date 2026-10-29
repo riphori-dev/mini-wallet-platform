@@ -5,7 +5,7 @@ namespace MiniWallet.Users.Infrastructure;
 
 /// <summary>A sensitive verification message in the in-memory Development mailbox.</summary>
 /// <param name="Email">Normalized recipient email.</param>
-/// <param name="Token">Single-use 64-character hexadecimal verification token; plaintext appears only in this local message.</param>
+/// <param name="Token">Single-use 64-character hexadecimal verification token, also included in the SMTP email when SMTP is enabled.</param>
 /// <param name="ExpiresAt">UTC expiry timestamp; verification at or after this instant fails.</param>
 public sealed record VerificationMessage(string Email, string Token, DateTimeOffset ExpiresAt);
 
