@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace MiniWallet.Users.Infrastructure.Migrations;
 
 // SQL-owned audit table: deliberately not an application entity or EF tracked aggregate.
-[DbContext(typeof(MiniWallet.Users.Infrastructure.UsersDbContext))]
+[DbContext(typeof(MiniWallet.Users.Infrastructure.Users.UsersDbContext))]
 [Migration("20261029070000_RequestAuditTrail")]
 public sealed class RequestAuditTrail : Migration
 {
