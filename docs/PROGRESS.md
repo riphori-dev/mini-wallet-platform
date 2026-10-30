@@ -194,3 +194,11 @@ Verification:
 - PASS idle API restart retained **13 Wallet audit rows and 8 Users audit rows**. Removed only isolated containers/network afterward; retained volumes. Normal running stack was not replaced.
 
 Not performed: browser walkthrough, final DESIGN page render, production log collector/retention configuration, clean committed checkout or commit/push. Activate in the normal stack with `docker compose up -d --build`; the existing one-shot migrators apply audit tables first. This is a lightweight best-effort operational request trail, not a claim of complete, tamper-proof financial/security auditing.
+
+## 2026-10-29: Fresh-laptop namespace build repair
+
+User's second-laptop Compose build failed with CS0246 after restore. Inspected committed HEAD feb4e7a: Contracts.cs now declares MiniWallet.Users.Application.Contracts, while the use cases/validators and several consumers still rely on the old parent namespace. Other latest folder/namespace changes also left missing imports for Wallet services, API error helpers, registration/database components, UsersDbContext in the audit migration, and explicit test references to DatabaseSetup/EmailAddress. This was a source mismatch in the submitted snapshot, not Docker configuration, package restore or laptop prerequisites. Earlier passing results preceded these namespace edits.
+
+Added small project-level global imports for the actual namespaces and corrected the explicit moved-type references. No routes, business rules, public payloads or database schema changes. UI remains untouched and untracked.
+
+PASS local solution build, zero warnings/errors. PASS Linux Release Docker solution build and full suite: **92 passed, zero failures/skips**. PASS both production Dockerfiles (Users and Wallet restore/publish/image export) from a separate git-archive HEAD snapshot overlaid with only the repair files, with no UI, local obj/bin or Git metadata. Snapshot stored under ignored .review/clone-build-3b90db43d2af443fa7c50ee6ea5e8953. PASS git diff --check. No new startup walkthrough was run for this import-only repair, and no commit/push performed. Commit/push these fixes, then pull them on the other laptop before repeating docker compose up -d --build.

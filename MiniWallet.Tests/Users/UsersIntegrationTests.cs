@@ -76,7 +76,7 @@ public sealed class UsersDatabaseFixture : IAsyncLifetime
         Connection = builder.ConnectionString;
         await using (var db = Db())
         {
-            await MiniWallet.Users.Infrastructure.DatabaseSetup.MigrateAsync(db);
+            await MiniWallet.Users.Infrastructure.Database.DatabaseSetup.MigrateAsync(db);
             await DevelopmentIdentitySeeder.SeedAdminAsync(db, new PasswordService(), "admin@miniwallet.test", "Local-admin-password-123!");
         }
         Users = new WebApplicationFactory<users::Program>().WithWebHostBuilder(builder =>
@@ -168,7 +168,7 @@ public sealed partial class UsersIntegrationTests(UsersDatabaseFixture fixture) 
     {
         await using var db = fixture.Db();
         var user = MiniWallet.Users.Domain.Entities.User.Register(
-            MiniWallet.Users.Domain.EmailAddress.Parse($"rollback-{Guid.NewGuid():N}@example.test"), "hash");
+            MiniWallet.Users.Domain.Entities.EmailAddress.Parse($"rollback-{Guid.NewGuid():N}@example.test"), "hash");
         var deliveryId = Guid.NewGuid();
         db.RegistrationDeliveries.Add(new() { EventId = deliveryId, PlayerId = user.Id, OccurredAt = DateTimeOffset.UtcNow });
         // Pretracked duplicate player delivery forces SaveChanges to reject the combined unit of work.

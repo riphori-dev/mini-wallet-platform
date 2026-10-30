@@ -2,3 +2,8 @@ global using MiniWallet.Infrastructure.Data;
 global using MiniWallet.Infrastructure;
 global using MiniWallet.Users.Domain.Entities;
 global using MiniWallet.Users.Infrastructure.Development;
+global using MiniWallet.Users.Application.Contracts;
+global using MiniWallet.Users.Infrastructure.Users;
+global using MiniWallet.Users.Infrastructure.Registration;
+global using MiniWallet.Application.Services;
+global using MiniWallet.Application;
